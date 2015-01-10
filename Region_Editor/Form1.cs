@@ -15,6 +15,7 @@ namespace Region_Editor
     {
         List<Region> listRegions = new List<Region>();
         Point click = new Point(-1, -1);
+        Region selected;
         public Form1()
         {
             InitializeComponent();
@@ -45,13 +46,7 @@ namespace Region_Editor
             r.Label = textBoxLabel.Text;
             r.Shape = (RegionShape)comboBoxShape.SelectedValue;
             listRegions.Add(r);
-            textBoxRegion.Text = listRegions.Count.ToString();
-            int area = 0;
-            for (int i = 0; i < listRegions.Count; i++)
-            {
-                area += listRegions[i].Width * listRegions[i].Height;
-            }
-            textBoxArea.Text = area.ToString();
+            RefreshTotal();
             graphicPanel1.Invalidate();
         }
 
@@ -62,7 +57,9 @@ namespace Region_Editor
             format.Alignment = StringAlignment.Center;
             format.LineAlignment = StringAlignment.Center;
             Font font = new Font("Arial", 8.0f);
-            Pen pen = new Pen(Color.Red, 5);
+            Pen pen = new Pen(Color.Red, 3);
+
+
             foreach (Region r in listRegions)
             {
                 Brush brush = new SolidBrush(r.Color);
@@ -74,10 +71,20 @@ namespace Region_Editor
                     if (r.Rectangle.Contains(click))
                     {
                         e.Graphics.DrawEllipse(pen, r.Rectangle);
+                        selected = r;
+                        RefreshSelected();
+                        buttonUpdate.Enabled = true;
+                        buttonDeselect.Enabled = true;
+                        buttonRemove.Enabled = true;
                     }
                     else
                     {
                         e.Graphics.DrawEllipse(Pens.Transparent, r.Rectangle);
+                        selected = null;
+                        Deselected();
+                        buttonUpdate.Enabled = false;
+                        buttonDeselect.Enabled = false;
+                        buttonRemove.Enabled = false;
                     }
                 }
                 else
@@ -87,10 +94,20 @@ namespace Region_Editor
                     if (r.Rectangle.Contains(click))
                     {
                         e.Graphics.DrawRectangle(pen, r.Rectangle);
+                        selected = r;
+                        RefreshSelected();
+                        buttonUpdate.Enabled = true;
+                        buttonDeselect.Enabled = true;
+                        buttonRemove.Enabled = true;
                     }
                     else
                     {
                         e.Graphics.DrawRectangle(Pens.Transparent, r.Rectangle);
+                        selected = null;
+                        Deselected();
+                        buttonUpdate.Enabled = false;
+                        buttonDeselect.Enabled = false;
+                        buttonRemove.Enabled = false;
                     }
                 }
             }
@@ -109,7 +126,134 @@ namespace Region_Editor
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
         {
             listRegions.Clear();
+            Deselected();
             graphicPanel1.Invalidate();
+        }
+
+        private void buttonUpdate_Click(object sender, EventArgs e)
+        {
+            selected.X = (int)numericUpDownX.Value;
+            selected.Y = (int)numericUpDownY.Value;
+            selected.Width = (int)numericUpDownWidth.Value;
+            selected.Height = (int)numericUpDownHeight.Value;
+            selected.Color = buttonColor.BackColor;
+            selected.Label = textBoxLabel.Text;
+            selected.Shape = (RegionShape)comboBoxShape.SelectedValue;
+            RefreshTotal();
+            RefreshSelected();
+            graphicPanel1.Invalidate();
+        }
+
+        private void buttonDeselect_Click(object sender, EventArgs e)
+        {
+            click.X = -1;
+            click.Y = -1;
+            graphicPanel1.Invalidate();
+        }
+
+        private void buttonRemove_Click(object sender, EventArgs e)
+        {
+            listRegions.Remove(selected);
+            RefreshTotal();
+            Deselected();
+            graphicPanel1.Invalidate();
+        }
+        private void RefreshTotal()
+        {
+            textBoxRegion.Text = listRegions.Count.ToString();
+            int area = 0;
+            for (int i = 0; i < listRegions.Count; i++)
+            {
+                area += listRegions[i].Width * listRegions[i].Height;
+            }
+            textBoxArea.Text = area.ToString();
+        }
+        private void RefreshSelected()
+        {
+            textBoxLabel.Text = selected.Label;
+            numericUpDownX.Value = selected.X;
+            numericUpDownY.Value = selected.Y;
+            numericUpDownHeight.Value = selected.Height;
+            numericUpDownWidth.Value = selected.Width;
+            buttonColor.BackColor = selected.Color;
+            comboBoxShape.SelectedItem = selected.Shape;
+        }
+
+        private void Deselected()
+        {
+            textBoxLabel.Text = "Untitled";
+            numericUpDownX.Value = 0;
+            numericUpDownY.Value = 0;
+            numericUpDownHeight.Value = 100;
+            numericUpDownWidth.Value = 100;
+            buttonColor.BackColor = Color.White;
+            comboBoxShape.SelectedItem = comboBoxShape.Items[0];
+        }
+
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Create an open file dialog
+            OpenFileDialog dlg = new OpenFileDialog();
+            // Set the filter strings
+            dlg.Filter = "All Files(*.*)|*.*|csv(*.csv)|*.csv";
+            // Display the dialog to the user
+            if (DialogResult.OK == dlg.ShowDialog())
+            {
+                listRegions.Clear();
+                // Open a stream for reading
+                System.IO.StreamReader reader = new System.IO.StreamReader(dlg.FileName);
+                // Write a line to the stream
+                while (reader.Peek() >= 0)
+                {
+                    string[] subs = reader.ReadLine().Split(new Char[] { ',' });
+                    if (subs.Length == 7)
+                    {
+                        Region r = new Region();
+                        r.Label = subs[0];
+                        r.X = int.Parse(subs[1]);
+                        r.Y = int.Parse(subs[2]);
+                        r.Width = int.Parse(subs[3]);
+                        r.Height = int.Parse(subs[4]);
+                        r.Shape = (RegionShape)Enum.Parse(typeof(RegionShape), subs[5]);
+                        r.Color = Color.FromArgb(int.Parse(subs[6]));
+                        listRegions.Add(r);
+                    }
+
+                }
+
+                // Close the stream
+                reader.Close();
+            }
+            graphicPanel1.Invalidate();
+        }
+
+        private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Create a size file dialog
+            SaveFileDialog dlg = new SaveFileDialog();
+            // Set the filter strings
+            dlg.Filter = "All Files(*.*)|*.*|csv(*.csv)|*.csv";
+            // Set the default extension
+            dlg.DefaultExt = "csv";
+            // Display the dialog to the user
+            if (DialogResult.OK == dlg.ShowDialog())
+            {
+                // Open a stream for writing
+                System.IO.StreamWriter writer = new System.IO.StreamWriter(dlg.FileName);
+                // Write the string
+                foreach (Region value in listRegions)
+                {
+                    writer.WriteLine(value.ToFile());
+                }
+                // Close the stream
+                writer.Close();
+            }
         }
     }
 }

@@ -122,6 +122,10 @@ namespace Region_Editor
 
         }
 
+        public string ToFile()
+        {
+            return label + "," + x + "," + y + "," + width + "," + height + "," + shape.ToString() + "," + color.ToArgb().ToString() + "\n";
+        }
 
     }
 }
