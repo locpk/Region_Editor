@@ -58,6 +58,7 @@ namespace Region_Editor
             format.LineAlignment = StringAlignment.Center;
             Font font = new Font("Arial", 8.0f);
             Pen pen = new Pen(Color.Red, 3);
+            Pen p = new Pen(Color.Black, 2);
 
 
             foreach (Region r in listRegions)
@@ -66,6 +67,11 @@ namespace Region_Editor
 
                 if (r.Shape == RegionShape.Ellipse)
                 {
+                    if (r.Color == SystemColors.Window)
+                    {
+                        e.Graphics.DrawEllipse(p, r.Rectangle);
+                    }
+
                     e.Graphics.FillEllipse(brush, r.Rectangle);
                     e.Graphics.DrawString(r.Label, font, Brushes.Black, r.Rectangle, format);
                     if (r.Rectangle.Contains(click))
@@ -89,6 +95,11 @@ namespace Region_Editor
                 }
                 else
                 {
+                    if (r.Color == SystemColors.Window)
+                    {
+                        e.Graphics.DrawRectangle(p, r.Rectangle);
+                    }
+
                     e.Graphics.FillRectangle(brush, r.Rectangle);
                     e.Graphics.DrawString(r.Label, font, Brushes.Black, r.Rectangle, format);
                     if (r.Rectangle.Contains(click))
@@ -209,7 +220,7 @@ namespace Region_Editor
                 // Open a stream for reading
                 System.IO.StreamReader reader = new System.IO.StreamReader(dlg.FileName);
                 // Write a line to the stream
-                while (reader.Peek() >= 0)
+                while (reader.Peek() > -1)
                 {
                     string[] subs = reader.ReadLine().Split(new Char[] { ',' });
                     if (subs.Length == 7)
